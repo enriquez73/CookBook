@@ -1,0 +1,22 @@
+services:
+  cookbook-api:
+    build:
+      context: ..
+      dockerfile: src/Cookbook.Api/Dockerfile
+    container_name: cookbook-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Default: Host=postgres;Port=5432;Database=${COOKBOOK_DB_NAME};Username=${COOKBOOK_DB_USER};Password=${COOKBOOK_DB_PASSWORD}
+    networks:
+      - homelab
+    labels:
+      caddy: cookbook-api.home.arpa
+      caddy.tls: internal
+      caddy.reverse_proxy: "{{upstreams 8080}}"
+
+networks:
+  homelab:
+    external: true
+
