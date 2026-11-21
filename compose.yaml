@@ -12,7 +12,7 @@ services:
 
   web:
     build:
-      context: ./src/Cookbook.Web
+      context: ./frontend
       dockerfile: Dockerfile
     depends_on:
       - api

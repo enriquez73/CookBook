@@ -1,59 +1,38 @@
-# Cookbook
+# Ricette Cuociriso
 
-Baseline backend for a home-hosted cookbook app built with ASP.NET Core and PostgreSQL.
+App per raccogliere ricette da preparare con il cuociriso Bear (4 tazze di riso crudo, vaporiera), con foto e video.
 
-## Current scope
+- **Backend**: ASP.NET Core Web API (`src/`, Api / Application / Domain / Infrastructure), EF Core.
+  SQLite in sviluppo (`App_Data/cookbook.db`), PostgreSQL per il deploy su Raspberry (`Database:Provider = Postgres`).
+- **Frontend**: Angular (`frontend/`), interfaccia in italiano.
+- **Media**: foto e video caricati salvati in `App_Data/media` (`Storage:MediaPath`) e serviti su `/media/...`; i video possono anche essere link esterni (YouTube/Vimeo).
 
-- ASP.NET Core API in `src/Cookbook.Api`
-- EF Core + PostgreSQL wiring in `src/Cookbook.Infrastructure`
-- Local development configured to reach the Raspberry-hosted PostgreSQL instance at `192.168.1.11`
-- Raspberry deployment compose in `docker/docker-compose.raspi.yml`
+## Requisiti
+.NET SDK 9+ (target net9.0) e Node.js LTS.
 
-## Local development
-
-Update the development connection string in `src/Cookbook.Api/appsettings.Development.json` or override it with an environment variable:
-
+## Avvio in locale
 ```bash
-export ConnectionStrings__Default="Host=192.168.1.11;Port=5432;Database=cookbook;Username=cookbook_app;Password=YOUR_PASSWORD"
-dotnet run --project src/Cookbook.Api
+# 1) API (http://localhost:5073, Development, SQLite, schema creato al primo avvio)
+dotnet run --project src/Cookbook.Api --launch-profile http
+
+# 2) Frontend (http://localhost:4200, proxy verso l'API per /api e /media)
+cd frontend && npm install && npm start
 ```
 
-The API exposes:
+## API
+- `GET /api/recipes?search=&cookerFunction=&tag=&servings=&maxMinutes=`, `POST /api/recipes`, `GET/PUT/DELETE /api/recipes/{id}`
+- `POST /api/recipes/{id}/media` (multipart `file`, `caption`): foto JPEG/PNG/WebP/GIF (max 15 MB), video MP4/WebM/MOV (max 300 MB)
+- `POST /api/recipes/{id}/media/video-url` (`{ url, caption }`), `DELETE /api/recipes/{id}/media/{mediaId}`
+- `GET /api/tags`, `GET /api/cooker-functions`, `GET /health`
 
-- `GET /` basic app info
-- `GET /health` simple health probe
-- `GET /api/recipes` recipe list from PostgreSQL
-- `GET /api/recipes/{id}` single recipe with ingredients and steps
-- `POST /api/recipes/seed/japanese-curry` inserts the first sample recipe if missing
-- `GET /openapi/v1.json` in Development
+Una ricetta ha max 4 persone / 4 tazze di riso crudo. Funzioni: riso bianco, integrale, porridge, zuppa, vapore, dolce, mantenimento caldo, altro.
 
-Quick local seed flow:
-
+## Test
 ```bash
-dotnet run --project src/Cookbook.Api
-curl -X POST http://localhost:5073/api/recipes/seed/japanese-curry
-curl http://localhost:5073/api/recipes
+dotnet test
 ```
+I test di integrazione usano un database SQLite temporaneo. Con un runtime più recente di .NET 9 usa `DOTNET_ROLL_FORWARD=Major dotnet test`.
 
-## Raspberry deployment
-
-1. Copy `docker/.env.example` to `docker/.env` and set the real password.
-2. Make sure the existing `postgres` container is on the external `homelab` network.
-3. Deploy from the repo root on the Raspberry:
-
-```bash
-cd docker
-cp .env.example .env
-nano .env
-docker compose -f docker-compose.raspi.yml --env-file .env up -d --build
-```
-
-The compose file assumes your Caddy setup reads Docker labels and will publish the API at `https://cookbook-api.home.arpa` using internal TLS.
-
-## Validation
-
-```bash
-dotnet build Cookbook.sln
-dotnet test Cookbook.sln
-```
-
+## Deploy (Raspberry)
+`docker/docker-compose.raspi.yml` imposta `ConnectionStrings__Default`; `Database:Provider=Postgres` è il default in `appsettings.json`.
+Lo schema è creato con `EnsureCreated` (nessuna migrazione EF per ora). Montare un volume su `App_Data/media` per conservare i file caricati.
