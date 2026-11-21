@@ -8,7 +8,7 @@ App per raccogliere ricette da preparare con il cuociriso Bear (4 tazze di riso 
 - **Media**: foto e video caricati salvati in `App_Data/media` (`Storage:MediaPath`) e serviti su `/media/...`; i video possono anche essere link esterni (YouTube/Vimeo).
 
 ## Requisiti
-.NET SDK 9+ (target net9.0) e Node.js LTS.
+.NET SDK 10+ (target net10.0) e Node.js LTS.
 
 ## Avvio in locale
 ```bash
