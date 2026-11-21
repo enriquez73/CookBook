@@ -6,7 +6,7 @@ Baseline backend for a home-hosted cookbook app built with ASP.NET Core and Post
 
 - ASP.NET Core API in `src/Cookbook.Api`
 - EF Core + PostgreSQL wiring in `src/Cookbook.Infrastructure`
-- Local development configured to reach the Raspberry-hosted PostgreSQL instance at `192.168.1.11`
+- PostgreSQL migrations are applied automatically when the API starts
 - Raspberry deployment compose in `docker/docker-compose.raspi.yml`
 
 ## Local development
@@ -22,17 +22,17 @@ The API exposes:
 
 - `GET /` basic app info
 - `GET /health` simple health probe
-- `GET /api/recipes` recipe list from PostgreSQL
-- `GET /api/recipes/{id}` single recipe with ingredients and steps
-- `POST /api/recipes/seed/japanese-curry` inserts the first sample recipe if missing
+- `GET /api/v1/recipes` paginated recipe list from PostgreSQL
+- `GET /api/v1/recipes/{id}` recipe detail
+- `POST /api/v1/recipes`, `PUT /api/v1/recipes/{id}`, and `DELETE /api/v1/recipes/{id}`
 - `GET /openapi/v1.json` in Development
 
-Quick local seed flow:
+Quick local health and list flow:
 
 ```bash
 dotnet run --project src/Cookbook.Api
-curl -X POST http://localhost:5073/api/recipes/seed/japanese-curry
-curl http://localhost:5073/api/recipes
+curl http://localhost:5073/health
+curl http://localhost:5073/api/v1/recipes
 ```
 
 ## Raspberry deployment
@@ -56,4 +56,3 @@ The compose file assumes your Caddy setup reads Docker labels and will publish t
 dotnet build Cookbook.sln
 dotnet test Cookbook.sln
 ```
-

@@ -12,45 +12,136 @@ public sealed partial class Recipe : AuditableEntity, IAggregateRoot
 {
     private readonly List<RecipeIngredient> _ingredients = [];
     private readonly List<RecipeStep> _steps = [];
+    private readonly List<RecipeImage> _images = [];
+
     private readonly List<Category> _categories = [];
     private readonly List<Tag> _tags = [];
     private readonly List<Equipment> _equipments = [];
-    private readonly List<RecipeImage> _images = [];
+    
+    public bool HasIngredients =>
+        _ingredients.Count > 0;
 
+    public bool HasSteps =>
+        _steps.Count > 0;
+
+    public bool HasCategories =>
+        _categories.Count > 0;
+
+    public bool HasTags =>
+        _tags.Count > 0;
+
+    public bool HasEquipments =>
+        _equipments.Count > 0;
+
+    /// <summary>
+    /// Gets the recipe name.
+    /// </summary>
     public string Name { get; private set; } = string.Empty;
 
+    /// <summary>
+    /// Gets the recipe description.
+    /// </summary>
     public string? Description { get; private set; }
 
+    /// <summary>
+    /// Gets optional notes.
+    /// </summary>
     public string? Notes { get; private set; }
 
+    /// <summary>
+    /// Gets the recipe source.
+    /// </summary>
     public string? Source { get; private set; }
 
+    /// <summary>
+    /// Gets the recipe difficulty.
+    /// </summary>
     public Difficulty Difficulty { get; private set; }
 
+    /// <summary>
+    /// Gets the cooking program.
+    /// </summary>
     public CookingProgram CookingProgram { get; private set; }
 
+    /// <summary>
+    /// Gets the preparation time in minutes.
+    /// </summary>
     public int PreparationTimeMinutes { get; private set; }
 
+    /// <summary>
+    /// Gets the cooking time in minutes.
+    /// </summary>
     public int CookingTimeMinutes { get; private set; }
 
+    /// <summary>
+    /// Gets the total time in minutes.
+    /// </summary>
+    public int TotalTimeMinutes =>
+        PreparationTimeMinutes + CookingTimeMinutes;
+
+    /// <summary>
+    /// Gets the number of servings.
+    /// </summary>
     public int Servings { get; private set; }
 
-    public IReadOnlyCollection<RecipeIngredient> Ingredients => _ingredients.AsReadOnly();
+    /// <summary>
+    /// Gets the ingredients.
+    /// </summary>
+    public IReadOnlyList<RecipeIngredient> Ingredients =>
+        _ingredients.AsReadOnly();
 
-    public IReadOnlyCollection<RecipeStep> Steps => _steps.AsReadOnly();
+    /// <summary>
+    /// Gets the preparation steps.
+    /// </summary>
+    public IReadOnlyList<RecipeStep> Steps =>
+        _steps.AsReadOnly();
 
-    public IReadOnlyCollection<Category> Categories => _categories.AsReadOnly();
+    /// <summary>
+    /// Gets the recipe images.
+    /// </summary>
+    public IReadOnlyList<RecipeImage> Images =>
+        _images.AsReadOnly();
 
-    public IReadOnlyCollection<Tag> Tags => _tags.AsReadOnly();
+    /// <summary>
+    /// Gets the assigned categories.
+    /// </summary>
+    public IReadOnlyList<Category> Categories =>
+        _categories.AsReadOnly();
 
-    public IReadOnlyCollection<Equipment> Equipments => _equipments.AsReadOnly();
+    /// <summary>
+    /// Gets the assigned tags.
+    /// </summary>
+    public IReadOnlyList<Tag> Tags =>
+        _tags.AsReadOnly();
 
-    public IReadOnlyCollection<RecipeImage> Images => _images.AsReadOnly();
+    /// <summary>
+    /// Gets the required equipments.
+    /// </summary>
+    public IReadOnlyList<Equipment> Equipments =>
+        _equipments.AsReadOnly();
 
+    /// <summary>
+    /// Gets the primary image.
+    /// </summary>
+    public RecipeImage? PrimaryImage =>
+        _images.FirstOrDefault(x => x.IsPrimary);
+
+    /// <summary>
+    /// Gets whether the recipe has images.
+    /// </summary>
+    public bool HasImages =>
+        _images.Count > 0;
+
+    /// <summary>
+    /// Required by Entity Framework.
+    /// </summary>
     private Recipe()
     {
     }
 
+    /// <summary>
+    /// Creates a new recipe.
+    /// </summary>
     public Recipe(
         string name,
         Difficulty difficulty,
@@ -73,8 +164,33 @@ public sealed partial class Recipe : AuditableEntity, IAggregateRoot
 
         ChangePreparationTime(preparationTimeMinutes);
         ChangeCookingTime(cookingTimeMinutes);
+
         ChangeServings(servings);
     }
+    
+    #region Recipe
+    public void Update(
+        string name,
+        string? description,
+        Difficulty difficulty,
+        CookingProgram cookingProgram,
+        int preparationTimeMinutes,
+        int cookingTimeMinutes,
+        int servings,
+        string? notes,
+        string? source)
+    {
+        Rename(name);
+        ChangeDescription(description);
+        ChangeDifficulty(difficulty);
+        ChangeCookingProgram(cookingProgram);
+        ChangePreparationTime(preparationTimeMinutes);
+        ChangeCookingTime(cookingTimeMinutes);
+        ChangeServings(servings);
+        ChangeNotes(notes);
+        ChangeSource(source);
+    }
+    #endregion
 
     #region Basic Information
 
@@ -85,9 +201,11 @@ public sealed partial class Recipe : AuditableEntity, IAggregateRoot
         name = name.Trim();
 
         if (name.Length > 200)
+        {
             throw new ArgumentException(
                 "Recipe name cannot exceed 200 characters.",
                 nameof(name));
+        }
 
         Name = name;
     }
@@ -160,7 +278,7 @@ public sealed partial class Recipe : AuditableEntity, IAggregateRoot
         if (_ingredients.Any(i => i.IngredientId == ingredient.Id))
         {
             throw new InvalidOperationException(
-                $"Ingredient '{ingredient.Name}' already exists.");
+                $"Ingredient '{ingredient.Name}' has already been added.");
         }
 
         var recipeIngredient = new RecipeIngredient(
@@ -172,22 +290,22 @@ public sealed partial class Recipe : AuditableEntity, IAggregateRoot
 
         _ingredients.Add(recipeIngredient);
 
-        ingredient.AddRecipeIngredient(recipeIngredient);
+        // ingredient.AddRecipeIngredient(recipeIngredient);
 
         return recipeIngredient;
     }
 
     public void RemoveIngredient(Guid ingredientId)
     {
-        var ingredient = _ingredients
+        var recipeIngredient = _ingredients
             .FirstOrDefault(i => i.IngredientId == ingredientId);
 
-        if (ingredient is null)
+        if (recipeIngredient is null)
             return;
 
-        _ingredients.Remove(ingredient);
+        _ingredients.Remove(recipeIngredient);
 
-        ingredient.Ingredient.RemoveRecipeIngredient(ingredient);
+        // recipeIngredient.Ingredient.RemoveRecipeIngredient(recipeIngredient);
     }
 
     #endregion
@@ -202,8 +320,6 @@ public sealed partial class Recipe : AuditableEntity, IAggregateRoot
             return;
 
         _categories.Add(category);
-
-        category.AddRecipe(this);
     }
 
     public void RemoveCategory(Guid categoryId)
@@ -211,12 +327,10 @@ public sealed partial class Recipe : AuditableEntity, IAggregateRoot
         var category = _categories
             .FirstOrDefault(c => c.Id == categoryId);
 
-        if (category is null)
-            return;
-
-        _categories.Remove(category);
-
-        category.RemoveRecipe(this);
+        if (category is not null)
+        {
+            _categories.Remove(category);
+        }
     }
 
     #endregion
@@ -231,8 +345,6 @@ public sealed partial class Recipe : AuditableEntity, IAggregateRoot
             return;
 
         _tags.Add(tag);
-
-        tag.AddRecipe(this);
     }
 
     public void RemoveTag(Guid tagId)
@@ -240,12 +352,10 @@ public sealed partial class Recipe : AuditableEntity, IAggregateRoot
         var tag = _tags
             .FirstOrDefault(t => t.Id == tagId);
 
-        if (tag is null)
-            return;
-
-        _tags.Remove(tag);
-
-        tag.RemoveRecipe(this);
+        if (tag is not null)
+        {
+            _tags.Remove(tag);
+        }
     }
 
     #endregion
@@ -260,8 +370,6 @@ public sealed partial class Recipe : AuditableEntity, IAggregateRoot
             return;
 
         _equipments.Add(equipment);
-
-        equipment.AddRecipe(this);
     }
 
     public void RemoveEquipment(Guid equipmentId)
@@ -269,12 +377,10 @@ public sealed partial class Recipe : AuditableEntity, IAggregateRoot
         var equipment = _equipments
             .FirstOrDefault(e => e.Id == equipmentId);
 
-        if (equipment is null)
-            return;
-
-        _equipments.Remove(equipment);
-
-        equipment.RemoveRecipe(this);
+        if (equipment is not null)
+        {
+            _equipments.Remove(equipment);
+        }
     }
 
     #endregion
@@ -297,8 +403,9 @@ public sealed partial class Recipe : AuditableEntity, IAggregateRoot
 
     public void RemoveStep(int stepNumber)
     {
-        var step = _steps
-            .FirstOrDefault(s => s.StepNumber == stepNumber);
+        ArgumentOutOfRangeException.ThrowIfLessThan(stepNumber, 1);
+
+        var step = _steps.FirstOrDefault(x => x.StepNumber == stepNumber);
 
         if (step is null)
             return;
@@ -322,7 +429,7 @@ public sealed partial class Recipe : AuditableEntity, IAggregateRoot
         if (to > _steps.Count)
             throw new ArgumentOutOfRangeException(nameof(to));
 
-        var step = _steps.First(s => s.StepNumber == from);
+        var step = _steps.Single(x => x.StepNumber == from);
 
         _steps.Remove(step);
 
@@ -353,15 +460,20 @@ public sealed partial class Recipe : AuditableEntity, IAggregateRoot
         string checksum,
         bool isPrimary = false)
     {
+        if (_images.Count == 0)
+        {
+            isPrimary = true;
+        }
+
         if (isPrimary)
         {
-            foreach (var image in _images)
+            foreach (var img in _images)
             {
-                image.RemovePrimary();
+                img.RemovePrimary();
             }
         }
 
-        var recipeImage = new RecipeImage(
+        var image = new RecipeImage(
             this,
             originalFileName,
             storedFileName,
@@ -373,15 +485,14 @@ public sealed partial class Recipe : AuditableEntity, IAggregateRoot
             isPrimary,
             _images.Count);
 
-        _images.Add(recipeImage);
+        _images.Add(image);
 
-        return recipeImage;
+        return image;
     }
 
     public void RemoveImage(Guid imageId)
     {
-        var image = _images
-            .FirstOrDefault(i => i.Id == imageId);
+        var image = _images.FirstOrDefault(x => x.Id == imageId);
 
         if (image is null)
             return;
@@ -398,6 +509,24 @@ public sealed partial class Recipe : AuditableEntity, IAggregateRoot
         }
     }
 
+    public void SetPrimaryImage(Guid imageId)
+    {
+        var image = _images.FirstOrDefault(x => x.Id == imageId);
+
+        if (image is null)
+        {
+            throw new InvalidOperationException(
+                "Image not found.");
+        }
+
+        foreach (var item in _images)
+        {
+            item.RemovePrimary();
+        }
+
+        image.SetAsPrimary();
+    }
+
     private void ReorderImages()
     {
         for (var i = 0; i < _images.Count; i++)
@@ -408,5 +537,8 @@ public sealed partial class Recipe : AuditableEntity, IAggregateRoot
 
     #endregion
 
-    public override string ToString() => Name;
+    public override string ToString()
+    {
+        return Name;
+    }
 }

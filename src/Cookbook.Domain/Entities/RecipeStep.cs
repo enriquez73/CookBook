@@ -3,9 +3,9 @@ using Cookbook.Domain.Common;
 namespace Cookbook.Domain.Entities;
 
 /// <summary>
-/// Represents a single step of a recipe.
+/// Represents a single preparation step of a recipe.
 /// </summary>
-public sealed class RecipeStep : AuditableEntity
+public sealed class RecipeStep : Entity
 {
     /// <summary>
     /// Gets the recipe identifier.
@@ -18,7 +18,7 @@ public sealed class RecipeStep : AuditableEntity
     public Recipe Recipe { get; private set; } = null!;
 
     /// <summary>
-    /// Gets the step order.
+    /// Gets the step number.
     /// </summary>
     public int StepNumber { get; private set; }
 
@@ -34,10 +34,6 @@ public sealed class RecipeStep : AuditableEntity
     {
     }
 
-    /// <summary>
-    /// Creates a new recipe step.
-    /// Only the Recipe aggregate root should create instances.
-    /// </summary>
     internal RecipeStep(
         Recipe recipe,
         int stepNumber,
@@ -73,7 +69,7 @@ public sealed class RecipeStep : AuditableEntity
 
     /// <summary>
     /// Changes the step number.
-    /// Intended to be called only by the Recipe aggregate root.
+    /// Intended to be used only by the Recipe aggregate.
     /// </summary>
     internal void ChangeStepNumber(int stepNumber)
     {

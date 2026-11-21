@@ -4,9 +4,9 @@ using Cookbook.Domain.SmartEnums;
 namespace Cookbook.Domain.Entities;
 
 /// <summary>
-/// Represents an ingredient used by a recipe.
+/// Represents an ingredient used in a recipe.
 /// </summary>
-public sealed class RecipeIngredient : AuditableEntity
+public sealed class RecipeIngredient : Entity
 {
     /// <summary>
     /// Gets the recipe identifier.
@@ -14,7 +14,7 @@ public sealed class RecipeIngredient : AuditableEntity
     public Guid RecipeId { get; private set; }
 
     /// <summary>
-    /// Gets the recipe.
+    /// Gets the parent recipe.
     /// </summary>
     public Recipe Recipe { get; private set; } = null!;
 
@@ -36,12 +36,15 @@ public sealed class RecipeIngredient : AuditableEntity
     /// <summary>
     /// Gets the measurement unit.
     /// </summary>
-    public MeasurementUnit Unit { get; private set; } = null!;
+    public MeasurementUnit MeasurementUnit { get; private set; } = null!;
 
     /// <summary>
-    /// Optional notes.
+    /// Gets optional notes.
     /// </summary>
     public string? Notes { get; private set; }
+    
+    public bool HasNotes =>
+        !string.IsNullOrWhiteSpace(Notes);
 
     /// <summary>
     /// Required by Entity Framework.
@@ -50,20 +53,16 @@ public sealed class RecipeIngredient : AuditableEntity
     {
     }
 
-    /// <summary>
-    /// Creates a new recipe ingredient.
-    /// Only the Recipe aggregate root should create instances.
-    /// </summary>
     internal RecipeIngredient(
         Recipe recipe,
         Ingredient ingredient,
         decimal quantity,
-        MeasurementUnit unit,
+        MeasurementUnit measurementUnit,
         string? notes = null)
     {
         ArgumentNullException.ThrowIfNull(recipe);
         ArgumentNullException.ThrowIfNull(ingredient);
-        ArgumentNullException.ThrowIfNull(unit);
+        ArgumentNullException.ThrowIfNull(measurementUnit);
 
         Recipe = recipe;
         RecipeId = recipe.Id;
@@ -72,12 +71,12 @@ public sealed class RecipeIngredient : AuditableEntity
         IngredientId = ingredient.Id;
 
         ChangeQuantity(quantity);
-        ChangeUnit(unit);
+        ChangeMeasurementUnit(measurementUnit);
         ChangeNotes(notes);
     }
 
     /// <summary>
-    /// Changes the ingredient quantity.
+    /// Changes the quantity.
     /// </summary>
     public void ChangeQuantity(decimal quantity)
     {
@@ -94,11 +93,12 @@ public sealed class RecipeIngredient : AuditableEntity
     /// <summary>
     /// Changes the measurement unit.
     /// </summary>
-    public void ChangeUnit(MeasurementUnit unit)
+    public void ChangeMeasurementUnit(
+        MeasurementUnit measurementUnit)
     {
-        ArgumentNullException.ThrowIfNull(unit);
+        ArgumentNullException.ThrowIfNull(measurementUnit);
 
-        Unit = unit;
+        MeasurementUnit = measurementUnit;
     }
 
     /// <summary>
@@ -106,11 +106,24 @@ public sealed class RecipeIngredient : AuditableEntity
     /// </summary>
     public void ChangeNotes(string? notes)
     {
-        Notes = string.IsNullOrWhiteSpace(notes)
-            ? null
-            : notes.Trim();
+        if (string.IsNullOrWhiteSpace(notes))
+        {
+            Notes = null;
+            return;
+        }
+
+        notes = notes.Trim();
+
+        if (notes.Length > 500)
+        {
+            throw new ArgumentException(
+                "Notes cannot exceed 500 characters.",
+                nameof(notes));
+        }
+
+        Notes = notes;
     }
 
     public override string ToString()
-        => $"{Quantity} {Unit.Symbol} {Ingredient.Name}";
+        => $"{Quantity} {MeasurementUnit.Symbol} {Ingredient.Name}";
 }

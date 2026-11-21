@@ -4,9 +4,9 @@ services:
       context: .
       dockerfile: src/Cookbook.Api/Dockerfile
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Default: Host=postgres;Port=5432;Database=${DATABASE};Username=${USERNAME};Password=${COOKBOOK_DB_PASSWORD}
+      ConnectionStrings__Default: Host=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASSWORD}
     networks:
       - homelab
 

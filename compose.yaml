@@ -6,7 +6,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Default: Host=postgres;Port=5432;Database=${DATABASE};Username=${USERNAME};Password=${COOKBOOK_DB_PASSWORD}
+      ConnectionStrings__Default: $ConnectionStrings__Default
     networks:
       - homelab
 

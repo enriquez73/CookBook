@@ -7,60 +7,69 @@ namespace Cookbook.Domain.Entities;
 /// </summary>
 public sealed class RecipeImage : AuditableEntity
 {
+    /// <summary>
+    /// Gets the recipe identifier.
+    /// </summary>
     public Guid RecipeId { get; private set; }
 
+    /// <summary>
+    /// Gets the parent recipe.
+    /// </summary>
     public Recipe Recipe { get; private set; } = null!;
 
     /// <summary>
-    /// Original file name uploaded by the user.
+    /// Gets the original uploaded file name.
     /// </summary>
     public string OriginalFileName { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Internal stored file name.
+    /// Gets the stored file name.
     /// </summary>
     public string StoredFileName { get; private set; } = string.Empty;
 
     /// <summary>
-    /// MIME type.
+    /// Gets the MIME content type.
     /// </summary>
     public string ContentType { get; private set; } = string.Empty;
 
     /// <summary>
-    /// File size in bytes.
+    /// Gets the file size in bytes.
     /// </summary>
     public long FileSize { get; private set; }
 
     /// <summary>
-    /// Image width in pixels.
+    /// Gets the image width in pixels.
     /// </summary>
     public int Width { get; private set; }
 
     /// <summary>
-    /// Image height in pixels.
+    /// Gets the image height in pixels.
     /// </summary>
     public int Height { get; private set; }
 
     /// <summary>
-    /// SHA256 checksum.
+    /// Gets the SHA256 checksum.
     /// </summary>
     public string Checksum { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Display order.
+    /// Gets the image display order.
     /// </summary>
     public int SortOrder { get; private set; }
 
     /// <summary>
-    /// Indicates whether this is the primary image.
+    /// Gets whether this is the primary image.
     /// </summary>
     public bool IsPrimary { get; private set; }
 
+    /// <summary>
+    /// Required by Entity Framework.
+    /// </summary>
     private RecipeImage()
     {
     }
 
-    public RecipeImage(
+    internal RecipeImage(
         Recipe recipe,
         string originalFileName,
         string storedFileName,
@@ -69,30 +78,30 @@ public sealed class RecipeImage : AuditableEntity
         int width,
         int height,
         string checksum,
-        bool isPrimary = false,
-        int sortOrder = 0)
+        bool isPrimary,
+        int sortOrder)
     {
         ArgumentNullException.ThrowIfNull(recipe);
 
-        SetOriginalFileName(originalFileName);
-        SetStoredFileName(storedFileName);
-        SetContentType(contentType);
-        SetChecksum(checksum);
+        Recipe = recipe;
+        RecipeId = recipe.Id;
+
+        SetOriginalFileName(originalFileName, 255);
+        SetStoredFileName(storedFileName, 255);
+        SetContentType(contentType, 100);
+        SetChecksum(checksum, 128);
 
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(fileSize);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
         ArgumentOutOfRangeException.ThrowIfNegative(sortOrder);
 
-        Recipe = recipe;
-        RecipeId = recipe.Id;
-
         FileSize = fileSize;
         Width = width;
         Height = height;
 
-        IsPrimary = isPrimary;
         SortOrder = sortOrder;
+        IsPrimary = isPrimary;
     }
 
     public void SetAsPrimary()
@@ -105,38 +114,64 @@ public sealed class RecipeImage : AuditableEntity
         IsPrimary = false;
     }
 
-    public void ChangeSortOrder(int order)
+    internal void ChangeSortOrder(int sortOrder)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(order);
+        ArgumentOutOfRangeException.ThrowIfNegative(sortOrder);
 
-        SortOrder = order;
+        SortOrder = sortOrder;
     }
 
-    private void SetOriginalFileName(string fileName)
+    private void SetOriginalFileName(string fileName, int maxLength)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+
+        if (fileName.Length > maxLength)
+        {
+            throw new ArgumentException(
+                $"Original file name cannot exceed {maxLength} characters.",
+                nameof(fileName));
+        }
 
         OriginalFileName = fileName.Trim();
     }
 
-    private void SetStoredFileName(string fileName)
+    private void SetStoredFileName(string fileName, int maxLength)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+
+        if (fileName.Length > maxLength)
+        {
+            throw new ArgumentException(
+                $"Stored file name cannot exceed {maxLength} characters.",
+                nameof(fileName));
+        }
 
         StoredFileName = fileName.Trim();
     }
 
-    private void SetContentType(string contentType)
+    private void SetContentType(string contentType, int maxLength)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(contentType);
+
+        if (contentType.Length > maxLength)
+        {
+            throw new ArgumentException(
+                $"Content type cannot exceed {maxLength} characters.",
+                nameof(contentType));
+        }
 
         ContentType = contentType.Trim();
     }
 
-    private void SetChecksum(string checksum)
+    private void SetChecksum(string checksum, int maxLength)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(checksum);
-
+if (checksum.Length > maxLength)
+        {
+            throw new ArgumentException(
+                $"Checksum cannot exceed {maxLength} characters.",
+                nameof(checksum));
+        }
         Checksum = checksum.Trim();
     }
 

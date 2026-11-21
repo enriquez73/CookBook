@@ -1,9 +1,11 @@
+using Cookbook.Application.Common.Interfaces;
+using Cookbook.Domain.Common;
 using Cookbook.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Cookbook.Infrastructure.Persistence;
 
-public sealed class CookbookDbContext : DbContext
+public sealed class CookbookDbContext : DbContext, IApplicationDbContext
 {
     public CookbookDbContext(DbContextOptions<CookbookDbContext> options)
         : base(options)
@@ -30,6 +32,30 @@ public sealed class CookbookDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(CookbookDbContext).Assembly);
+        modelBuilder.Ignore<DomainEvent>();
+
+        modelBuilder.ApplyConfigurationsFromAssembly(InfrastructureAssemblyReference.Assembly);
+    }
+
+    public override Task<int> SaveChangesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        SetAuditValues();
+
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void SetAuditValues()
+    {
+        var now = DateTime.UtcNow;
+
+        foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
+        {
+            if (entry.State == EntityState.Added)
+                entry.Property(x => x.CreatedAt).CurrentValue = now;
+
+            if (entry.State == EntityState.Modified)
+                entry.Property(x => x.UpdatedAt).CurrentValue = now;
+        }
     }
 }

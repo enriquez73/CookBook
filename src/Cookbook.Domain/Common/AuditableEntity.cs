@@ -12,7 +12,6 @@ public abstract class AuditableEntity : Entity
 
     protected AuditableEntity()
     {
-        CreatedAt = DateTime.UtcNow;
     }
 
     public void MarkAsUpdated(string? user = null)

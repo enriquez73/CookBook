@@ -1,4 +1,5 @@
 using Cookbook.Infrastructure.Persistence;
+using Cookbook.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,8 +16,9 @@ public static class DependencyInjection
 
         services.AddDbContext<CookbookDbContext>(options =>
             options.UseNpgsql(connectionString));
+        services.AddScoped<IApplicationDbContext>(provider =>
+            provider.GetRequiredService<CookbookDbContext>());
 
         return services;
     }
 }
-

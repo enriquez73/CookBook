@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Cookbook.Domain.Common;
 
 public class Entity : IEntity
@@ -11,7 +13,7 @@ public class Entity : IEntity
 
     protected Entity()
     {
-        Id = Guid.NewGuid();
+        Id = Guid.CreateVersion7();
     }
 
     public void AddDomainEvent(DomainEvent domainEvent)
@@ -21,6 +23,7 @@ public class Entity : IEntity
 
     public void RemoveDomainEvent(DomainEvent domainEvent)
     {
+        ArgumentNullException.ThrowIfNull(domainEvent);
         _domainEvents.Remove(domainEvent);
     }
 

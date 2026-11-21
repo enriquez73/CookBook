@@ -78,5 +78,5 @@ public sealed class MeasurementUnit : Enumeration
         Enumeration.FromName<MeasurementUnit>(name);
 
     public override string ToString()
-        => Symbol;
+        => Name;
 }
