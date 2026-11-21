@@ -12,14 +12,19 @@ App per raccogliere ricette da preparare con il cuociriso Bear (4 tazze di riso 
 
 ## Avvio in locale
 ```bash
-# 1) API (http://localhost:5073, Development, SQLite, schema creato al primo avvio)
+# 1) API (http://localhost:5000, https://localhost:5001 col profilo "https"; Development, SQLite, schema creato al primo avvio)
 dotnet run --project src/Cookbook.Api --launch-profile http
 
 # 2) Frontend (http://localhost:4200, proxy verso l'API per /api e /media)
 cd frontend && npm install && npm start
+
+# 3) App completa su http://localhost:5000: la build Angular finisce in src/Cookbook.Api/wwwroot
+#    ed è servita dall'API (fallback SPA; /api, /media, /health e la documentazione restano raggiungibili)
+cd frontend && npx ng build
 ```
 
 ## API
+- Documentazione (solo Development): Swagger UI su `/swagger`, Redoc su `/redoc`, documento OpenAPI su `/openapi/v1.json` (le pagine caricano gli asset da CDN).
 - `GET /api/recipes?search=&cookerFunction=&tag=&servings=&maxMinutes=`, `POST /api/recipes`, `GET/PUT/DELETE /api/recipes/{id}`
 - `POST /api/recipes/{id}/media` (multipart `file`, `caption`): foto JPEG/PNG/WebP/GIF (max 15 MB), video MP4/WebM/MOV (max 300 MB)
 - `POST /api/recipes/{id}/media/video-url` (`{ url, caption }`), `DELETE /api/recipes/{id}/media/{mediaId}`
@@ -35,4 +40,4 @@ I test di integrazione usano un database SQLite temporaneo. Con un runtime più 
 
 ## Deploy (Raspberry)
 `docker/docker-compose.raspi.yml` imposta `ConnectionStrings__Default`; `Database:Provider=Postgres` è il default in `appsettings.json`.
-Lo schema è creato con `EnsureCreated` (nessuna migrazione EF per ora). Montare un volume su `App_Data/media` per conservare i file caricati.
+Lo schema è creato con `EnsureCreated` (nessuna migrazione EF per ora). Il Dockerfile compila anche il frontend e l'API serve tutto sulla porta 8080 (mappata su `5000` in `compose.yaml`). Montare un volume su `App_Data/media` per conservare i file caricati.

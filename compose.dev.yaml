@@ -7,15 +7,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__Default: Host=postgres;Port=5432;Database=${DATABASE};Username=${USERNAME};Password=${COOKBOOK_DB_PASSWORD}
-    networks:
-      - homelab
-
-  web:
-    build:
-      context: ./src/Cookbook.Web
-      dockerfile: Dockerfile
-    depends_on:
-      - api
+    ports:
+      - "5000:8080"
     networks:
       - homelab
 
