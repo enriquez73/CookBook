@@ -1,0 +1,7 @@
+.head h1 { flex: 1; margin: 0; }
+.gallery { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0; }
+.gallery img { max-height: 260px; border-radius: 8px; }
+video, iframe { width: 100%; aspect-ratio: 16/9; border: 0; }
+figure { margin: 1rem 0; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-top: 1rem; }
+li { margin-bottom: .4rem; }

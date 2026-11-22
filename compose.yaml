@@ -6,16 +6,12 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
+      Logging__Loki__Uri: http://loki:3100
       ConnectionStrings__Default: Host=postgres;Port=5432;Database=${DATABASE};Username=${USERNAME};Password=${COOKBOOK_DB_PASSWORD}
-    networks:
-      - homelab
-
-  web:
-    build:
-      context: ./src/Cookbook.Web
-      dockerfile: Dockerfile
-    depends_on:
-      - api
+    ports:
+      - "5000:8080"
+    volumes:
+      - ./src/Cookbook.Api/App_Data/media:/app/App_Data/media
     networks:
       - homelab
 

@@ -3,33 +3,44 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Cookbook.Infrastructure.Persistence;
 
-public sealed class CookbookDbContext : DbContext
+public sealed class CookbookDbContext(DbContextOptions<CookbookDbContext> options) : DbContext(options)
 {
-    public CookbookDbContext(DbContextOptions<CookbookDbContext> options)
-        : base(options)
-    {
-    }
-
     public DbSet<Recipe> Recipes => Set<Recipe>();
-
-    public DbSet<Ingredient> Ingredients => Set<Ingredient>();
-
-    public DbSet<Category> Categories => Set<Category>();
-
     public DbSet<Tag> Tags => Set<Tag>();
 
-    public DbSet<Equipment> Equipments => Set<Equipment>();
-
-    public DbSet<RecipeIngredient> RecipeIngredients => Set<RecipeIngredient>();
-
-    public DbSet<RecipeStep> RecipeSteps => Set<RecipeStep>();
-
-    public DbSet<RecipeImage> RecipeImages => Set<RecipeImage>();
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(ModelBuilder b)
     {
-        base.OnModelCreating(modelBuilder);
-
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(CookbookDbContext).Assembly);
+        b.Entity<Recipe>(e =>
+        {
+            e.Property(x => x.Title).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(4000);
+            e.Property(x => x.CookerFunction).HasConversion<string>().HasMaxLength(30);
+            e.Property(x => x.RiceCups).HasConversion<double>();
+            e.HasMany(x => x.CookingAppliances).WithOne().HasForeignKey(x => x.RecipeId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(x => x.Ingredients).WithOne().HasForeignKey(x => x.RecipeId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(x => x.Steps).WithOne().HasForeignKey(x => x.RecipeId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(x => x.Media).WithOne().HasForeignKey(x => x.RecipeId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(x => x.Tags).WithMany(x => x.Recipes);
+        });
+        b.Entity<RecipeIngredient>().Property(x => x.Name).HasMaxLength(200).IsRequired();
+        b.Entity<RecipeIngredient>().Property(x => x.Quantity).HasMaxLength(100);
+        b.Entity<RecipeStep>().Property(x => x.Text).HasMaxLength(4000).IsRequired();
+        b.Entity<RecipeCookingAppliance>(e =>
+        {
+            e.ToTable("RecipeCookingAppliances");
+            e.HasKey(x => new { x.RecipeId, x.Appliance });
+            e.Property(x => x.Appliance).HasConversion<string>().HasMaxLength(30);
+        });
+        b.Entity<Tag>(e =>
+        {
+            e.Property(x => x.Name).HasMaxLength(50).IsRequired();
+            e.HasIndex(x => x.Name).IsUnique();
+        });
+        b.Entity<RecipeMedia>(e =>
+        {
+            e.Property(x => x.Kind).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.Url).HasMaxLength(2000);
+            e.Property(x => x.Caption).HasMaxLength(300);
+        });
     }
 }

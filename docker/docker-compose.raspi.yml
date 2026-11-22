@@ -1,20 +1,38 @@
 services:
   cookbook-api:
-    build:
-      context: ..
-      dockerfile: src/Cookbook.Api/Dockerfile
+    image: ghcr.io/enriquez73/cookbook-api:${IMAGE_TAG:-latest}
     container_name: cookbook-api
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:8080
-      ConnectionStrings__Default: Host=postgres;Port=5432;Database=${COOKBOOK_DB_NAME};Username=${COOKBOOK_DB_USER};Password=${COOKBOOK_DB_PASSWORD}
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=${COOKBOOK_DB_NAME:?Set COOKBOOK_DB_NAME in docker/.env};Username=${COOKBOOK_DB_USER:?Set COOKBOOK_DB_USER in docker/.env};Password=${COOKBOOK_DB_PASSWORD:?Set COOKBOOK_DB_PASSWORD in docker/.env}"
+      Logging__Loki__Uri: ${LOKI_URL:-http://loki:3100}
+      Storage__MediaPath: /app/App_Data/media
+    volumes:
+      - ${COOKBOOK_MEDIA_PATH:-/home/enrico/docker/cookbook/src/Cookbook.Api/App_Data/media}:/app/App_Data/media
     networks:
       - homelab
     labels:
       caddy: cookbook-api.home.arpa
       caddy.tls: internal
       caddy.reverse_proxy: "{{upstreams 8080}}"
+
+  cookbook-frontend:
+    image: ghcr.io/enriquez73/cookbook-frontend:${IMAGE_TAG:-latest}
+    container_name: cookbook-frontend
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    depends_on:
+      cookbook-api:
+        condition: service_started
+    networks:
+      - homelab
+    labels:
+      caddy: cookbook.raspberry.arpa
+      caddy.tls: internal
+      caddy.reverse_proxy: "{{upstreams 80}}"
 
 networks:
   homelab:

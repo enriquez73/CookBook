@@ -1,0 +1,64 @@
+<p-card class="filters">
+  <div class="row">
+    <input pInputText type="search" placeholder="Cerca per titolo, ingrediente, tag…"
+           aria-label="Cerca ricette"
+           [(ngModel)]="filter.search" (ngModelChange)="load()" />
+    <p-select [options]="functions" optionLabel="label" optionValue="value"
+              [(ngModel)]="filter.cookerFunction" (ngModelChange)="load()"
+              placeholder="Tutte le funzioni" aria-label="Filtra per funzione" />
+    <p-select [options]="appliances" optionLabel="label" optionValue="value"
+              [(ngModel)]="filter.cookingAppliance" (ngModelChange)="load()"
+              placeholder="Tutte le attrezzature" aria-label="Filtra per attrezzatura" />
+    <p-select [options]="tagOptions()" optionLabel="label" optionValue="value"
+              [(ngModel)]="filter.tag" (ngModelChange)="load()"
+              aria-label="Filtra per tag" />
+    <input pInputText type="number" min="1" max="100" placeholder="Porzioni" aria-label="Filtra per porzioni"
+           [(ngModel)]="filter.servings" (ngModelChange)="load()" />
+    <p-select [options]="durationOptions" optionLabel="label" optionValue="value"
+              [(ngModel)]="filter.maxMinutes" (ngModelChange)="load()"
+              aria-label="Filtra per durata" />
+  </div>
+</p-card>
+
+@if (error()) { <p class="error">{{ error() }}</p> }
+@if (!loading() && recipes().length === 0 && !error()) {
+  <p class="muted">Nessuna ricetta trovata. <a routerLink="/ricette/nuova">Aggiungine una!</a></p>
+}
+<div class="grid">
+  @for (r of recipes(); track r.id) {
+    <p-card class="recipe-card">
+      <ng-template #header>
+        @if (r.coverUrl) {
+          <img class="recipe-cover" [src]="r.coverUrl" [alt]="'Immagine di ' + r.title" />
+        } @else {
+          <div class="recipe-cover recipe-cover-placeholder" aria-hidden="true">🍚</div>
+        }
+      </ng-template>
+      <ng-template #title>
+        <a class="recipe-title" [routerLink]="['/ricette', r.id]">{{ r.title }}</a>
+      </ng-template>
+      @if (r.tags.length) {
+        <ng-template #subtitle>
+          <div class="recipe-tags" aria-label="Tag della ricetta">
+            @for (t of r.tags; track t) { <p-tag [value]="t" severity="secondary" /> }
+          </div>
+        </ng-template>
+      }
+      <div class="recipe-details">
+        <p><span aria-hidden="true">🍳</span> {{ applianceNames(r) }}</p>
+        @if (r.cookerFunction) { <p><span aria-hidden="true">⚙️</span> {{ label(r.cookerFunction) }}</p> }
+        <p><span aria-hidden="true">⏱️</span> {{ r.cookingTimeMinutes }} min
+          <span class="detail-divider" aria-hidden="true">·</span>
+          <span aria-hidden="true">🍽️</span> {{ r.servings }} {{ r.servings === 1 ? 'persona' : 'persone' }}
+          @if (r.hasVideo) { <span class="video-label">· 🎬 Video</span> }
+        </p>
+      </div>
+      @if (r.description) { <p class="recipe-description">{{ r.description }}</p> }
+      <ng-template #footer>
+        <a pButton [routerLink]="['/ricette', r.id]" severity="secondary" [outlined]="true" class="recipe-action">
+          <span pButtonLabel>Apri ricetta</span>
+        </a>
+      </ng-template>
+    </p-card>
+  }
+</div>

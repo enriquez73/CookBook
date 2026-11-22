@@ -1,0 +1,51 @@
+@if (recipe(); as r) {
+  <div class="row head">
+    <h1>{{ r.title }}</h1>
+    <a pButton [routerLink]="['/ricette', r.id, 'modifica']"><span pButtonLabel>Modifica</span></a>
+    <button pButton severity="danger" type="button" (click)="remove()"><span pButtonLabel>Elimina</span></button>
+  </div>
+  <p class="muted">
+    {{ applianceNames(r) }}
+    @if (r.cookerFunction) { · {{ label(r.cookerFunction) }} }
+    · {{ r.cookingTimeMinutes }} min · {{ r.servings }} {{ r.servings === 1 ? 'persona' : 'persone' }}
+    @if (r.riceCups > 0) { · {{ r.riceCups }} tazze di riso crudo }
+    @if (r.usesSteamer) { · con vaporiera }
+  </p>
+  @for (t of r.tags; track t) { <span class="chip">{{ t }}</span> }
+  @if (r.description) { <p>{{ r.description }}</p> }
+
+  <div class="gallery">
+    @for (m of photos(); track m.id) { <img [src]="m.url" [alt]="m.caption ?? r.title" /> }
+  </div>
+  @for (m of videos(); track m.id) {
+    <figure class="card">
+      @if (m.kind === 'VideoFile') {
+        <video [src]="m.url" controls preload="metadata"></video>
+      } @else if (embed(m.url); as e) {
+        <iframe [src]="e" allowfullscreen title="Video ricetta"></iframe>
+      } @else {
+        <a [href]="m.url" target="_blank" rel="noopener noreferrer">Guarda il video ↗</a>
+      }
+      @if (m.caption) { <figcaption class="muted">{{ m.caption }}</figcaption> }
+    </figure>
+  }
+
+  <div class="cols">
+    <section class="card">
+      <h2>Ingredienti</h2>
+      <ul>
+        @for (i of r.ingredients; track $index) {
+          <li><strong>{{ i.quantity }}</strong> {{ i.name }}</li>
+        }
+      </ul>
+    </section>
+    <section class="card">
+      <h2>Preparazione</h2>
+      <ol>
+        @for (s of r.steps; track $index) { <li>{{ s }}</li> }
+      </ol>
+    </section>
+  </div>
+} @else if (error()) {
+  <p class="error">{{ error() }}</p>
+}
