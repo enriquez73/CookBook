@@ -59,7 +59,7 @@
   <button pButton severity="secondary" size="small" type="button" (click)="m.ingredients.push({ name: '', quantity: '' })"><span pButtonLabel>+ Ingrediente</span></button>
 
   <h3>Preparazione</h3>
-  @for (s of m.steps; track $index; let n = $index) {
+  @for (s of m.steps; track s.key; let n = $index) {
     <fieldset class="step-editor">
       <legend>Passo {{ n + 1 }}</legend>
       <div class="row">
@@ -71,10 +71,10 @@
       }
       <div class="step-image-inputs">
         <label [for]="'step-file-' + n">Immagine del passo (file)</label>
-        <input [id]="'step-file-' + n" type="file" accept="image/jpeg,image/png,image/webp,image/gif" (change)="pickStepImage(s, $event)" />
+        <input [id]="'step-file-' + n" type="file" accept="image/jpeg,image/png,image/webp,image/gif" [disabled]="!s.text.trim()" (change)="pickStepImage(s, $event)" />
         <label [for]="'step-url-' + n">Oppure link diretto all’immagine</label>
         <input pInputText [id]="'step-url-' + n" [name]="'step-url-' + n" type="url"
-               [(ngModel)]="s.imageUrlDraft" (ngModelChange)="clearStepFile(s)"
+               [(ngModel)]="s.imageUrlDraft" (ngModelChange)="clearStepFile(s)" [disabled]="!s.text.trim()"
                placeholder="https://esempio.it/foto.jpg" />
         <small>JPEG, PNG, WebP o GIF; massimo 15 MB. L’immagine viene salvata nell’app.</small>
         @if (!s.removeImage && (s.imagePreviewUrl || s.savedImageUrl || s.imageUrlDraft)) {

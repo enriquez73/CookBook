@@ -104,7 +104,6 @@ public static class RecipesEndpoints
             return Invalid("stepIds", "Uno dei passaggi indicati non appartiene a questa ricetta.");
         var previousStepFiles = r.Steps.ToDictionary(step => step.Id, step => step.ImageFileName);
         db.RemoveRange(r.Ingredients);
-        db.RemoveRange(r.CookingAppliances);
         await Apply(r, req, db);
         var retainedStepIds = r.Steps.Select(step => step.Id).ToHashSet();
         var removedStepFiles = previousStepFiles
@@ -112,7 +111,6 @@ public static class RecipesEndpoints
             .Select(entry => entry.Value!)
             .ToList();
         db.AddRange(r.Ingredients);
-        db.AddRange(r.CookingAppliances);
         await db.SaveChangesAsync();
         foreach (var fileName in removedStepFiles) storage.Delete(fileName);
         return Results.Ok(ToDetail(r));
@@ -341,8 +339,19 @@ public static class RecipesEndpoints
         r.Servings = req.Servings;
         r.RiceCups = req.RiceCups;
         r.CookingTimeMinutes = req.CookingTimeMinutes;
+        var existingAppliances = r.CookingAppliances.ToDictionary(item => item.Appliance);
         var appliances = RequestedAppliances(req).Distinct().ToList();
-        r.CookingAppliances = appliances.Select(a => new RecipeCookingAppliance { RecipeId = r.Id, Appliance = a }).ToList();
+        var retainedAppliances = new HashSet<CookingAppliance>();
+        r.CookingAppliances = appliances.Select(appliance =>
+        {
+            if (existingAppliances.TryGetValue(appliance, out var existing))
+            {
+                retainedAppliances.Add(appliance);
+                return existing;
+            }
+            return new RecipeCookingAppliance { RecipeId = r.Id, Appliance = appliance };
+        }).ToList();
+        db.RemoveRange(existingAppliances.Values.Where(item => !retainedAppliances.Contains(item.Appliance)));
         r.CookerFunction = appliances.Contains(CookingAppliance.RiceCooker) ? req.CookerFunction : null;
         r.UsesSteamer = req.UsesSteamer;
         r.UpdatedAt = DateTime.UtcNow;

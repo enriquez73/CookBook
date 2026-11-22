@@ -31,6 +31,7 @@ interface FormModel {
 }
 
 interface StepDraft {
+  key: string;
   id: string | null;
   text: string;
   savedImageUrl: string | null;
@@ -41,6 +42,7 @@ interface StepDraft {
 }
 
 const emptyStep = (): StepDraft => ({
+  key: crypto.randomUUID(),
   id: null,
   text: '',
   savedImageUrl: null,
@@ -102,6 +104,7 @@ export class RecipeForm implements OnInit {
           usesSteamer: r.usesSteamer,
           ingredients: r.ingredients.map((i) => ({ name: i.name, quantity: i.quantity ?? '' })),
           steps: r.stepDetails.map((step) => ({
+            key: step.id,
             id: step.id,
             text: step.text,
             savedImageUrl: step.imageUrl,
