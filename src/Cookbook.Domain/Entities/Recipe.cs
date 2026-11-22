@@ -45,6 +45,8 @@ public sealed class RecipeStep
     public Guid RecipeId { get; set; }
     public int Order { get; set; }
     public string Text { get; set; } = string.Empty;
+    public string? ImageFileName { get; set; }
+    public string? ImageContentType { get; set; }
 }
 
 public sealed class RecipeCookingAppliance

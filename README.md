@@ -28,6 +28,7 @@ cd frontend && npx ng build
 - `GET /api/recipes?search=&cookingAppliance=&cookerFunction=&tag=&servings=&maxMinutes=`, `POST /api/recipes`, `GET/PUT/DELETE /api/recipes/{id}`
 - `POST /api/recipes/{id}/media` (multipart `file`, `caption`): foto JPEG/PNG/WebP/GIF (max 15 MB), video MP4/WebM/MOV (max 300 MB)
 - `POST /api/recipes/{id}/media/image-url` (`{ url, caption }`): scarica immagini JPEG/PNG/WebP/GIF (max 15 MB) da URL HTTP(S) pubblico e le salva in `App_Data/media/images`
+- `POST /api/recipes/{id}/steps/{stepId}/image` (multipart `file`), `POST /api/recipes/{id}/steps/{stepId}/image-url` (`{ url }`) e `DELETE /api/recipes/{id}/steps/{stepId}/image`: carica, scarica o rimuove l'immagine associata al singolo passaggio; le risposte dettaglio espongono `stepDetails` con ID e `imageUrl`.
 - `POST /api/recipes/{id}/media/video-url` (`{ url, caption }`), `DELETE /api/recipes/{id}/media/{mediaId}`
 - `GET /api/tags`, `GET /api/cooker-functions`, `GET /api/cooking-appliances`, `GET /health`
 

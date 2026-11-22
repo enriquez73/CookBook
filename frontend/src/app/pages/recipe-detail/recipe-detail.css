@@ -5,3 +5,11 @@ video, iframe { width: 100%; aspect-ratio: 16/9; border: 0; }
 figure { margin: 1rem 0; }
 .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-top: 1rem; }
 li { margin-bottom: .4rem; }
+.step-image {
+  display: block;
+  max-width: min(100%, 32rem);
+  max-height: 24rem;
+  margin: 0.5rem 0 1rem;
+  border-radius: 0.75rem;
+  object-fit: contain;
+}

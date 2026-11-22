@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { forkJoin, Observable, of } from 'rxjs';
@@ -26,20 +26,42 @@ interface FormModel {
   cookingAppliances: CookingAppliance[];
   usesSteamer: boolean;
   ingredients: { name: string; quantity: string }[];
-  steps: string[];
+  steps: StepDraft[];
   tags: string;
 }
+
+interface StepDraft {
+  id: string | null;
+  text: string;
+  savedImageUrl: string | null;
+  imageUrlDraft: string;
+  imageFile: File | null;
+  imagePreviewUrl: string | null;
+  removeImage: boolean;
+}
+
+const emptyStep = (): StepDraft => ({
+  id: null,
+  text: '',
+  savedImageUrl: null,
+  imageUrlDraft: '',
+  imageFile: null,
+  imagePreviewUrl: null,
+  removeImage: false,
+});
 
 @Component({
   imports: [FormsModule, RouterLink, ButtonModule, InputText, Select, Textarea],
   selector: 'app-recipe-form',
   styleUrl: './recipe-form.css',
   templateUrl: './recipe-form.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecipeForm implements OnInit {
   readonly id = input<string>();
   private readonly service = inject(RecipeService);
   private readonly router = inject(Router);
+  private readonly changeDetector = inject(ChangeDetectorRef);
   protected readonly functions = COOKER_FUNCTIONS;
   protected readonly appliances = COOKING_APPLIANCES;
   protected readonly existing = signal<Media[]>([]);
@@ -58,7 +80,7 @@ export class RecipeForm implements OnInit {
     cookingAppliances: ['RiceCooker'],
     usesSteamer: false,
     ingredients: [{ name: '', quantity: '' }],
-    steps: [''],
+    steps: [emptyStep()],
     tags: '',
   };
 
@@ -79,10 +101,19 @@ export class RecipeForm implements OnInit {
             : [r.cookingAppliance ?? 'RiceCooker'],
           usesSteamer: r.usesSteamer,
           ingredients: r.ingredients.map((i) => ({ name: i.name, quantity: i.quantity ?? '' })),
-          steps: [...r.steps],
+          steps: r.stepDetails.map((step) => ({
+            id: step.id,
+            text: step.text,
+            savedImageUrl: step.imageUrl,
+            imageUrlDraft: '',
+            imageFile: null,
+            imagePreviewUrl: null,
+            removeImage: false,
+          })),
           tags: r.tags.join(', '),
         };
         this.existing.set(r.media);
+        this.changeDetector.markForCheck();
       },
       error: () => this.error.set('Ricetta non trovata.'),
     });
@@ -90,6 +121,45 @@ export class RecipeForm implements OnInit {
 
   protected pick(event: Event): void {
     this.files = Array.from((event.target as HTMLInputElement).files ?? []);
+  }
+
+  protected pickStepImage(step: StepDraft, event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0] ?? null;
+    if (!file) return;
+    this.revokePreview(step);
+    step.imageFile = file;
+    step.imageUrlDraft = '';
+    step.imagePreviewUrl = URL.createObjectURL(file);
+    step.removeImage = false;
+  }
+
+  protected clearStepFile(step: StepDraft): void {
+    if (!step.imageUrlDraft.trim()) return;
+    this.revokePreview(step);
+    step.imageFile = null;
+    step.removeImage = false;
+  }
+
+  protected removeStepImage(step: StepDraft): void {
+    this.revokePreview(step);
+    step.imageFile = null;
+    step.imageUrlDraft = '';
+    step.removeImage = !!step.id && !!step.savedImageUrl;
+    if (!step.removeImage) step.savedImageUrl = null;
+  }
+
+  private revokePreview(step: StepDraft): void {
+    if (step.imagePreviewUrl) URL.revokeObjectURL(step.imagePreviewUrl);
+    step.imagePreviewUrl = null;
+  }
+
+  protected removeStep(index: number): void {
+    this.revokePreview(this.m.steps[index]);
+    this.m.steps.splice(index, 1);
+  }
+
+  protected addStep(): void {
+    this.m.steps.push(emptyStep());
   }
 
   protected usesRiceCooker(): boolean {
@@ -119,6 +189,7 @@ export class RecipeForm implements OnInit {
   protected save(): void {
     this.saving.set(true);
     this.error.set('');
+    const activeSteps = this.m.steps.filter((step) => step.text.trim());
     const body: RecipeRequest = {
       title: this.m.title,
       description: this.m.description || null,
@@ -131,7 +202,8 @@ export class RecipeForm implements OnInit {
       ingredients: this.m.ingredients
         .filter((i) => i.name.trim())
         .map((i) => ({ name: i.name, quantity: i.quantity || null })),
-      steps: this.m.steps.filter((s) => s.trim()),
+      steps: activeSteps.map((step) => step.text.trim()),
+      stepIds: activeSteps.map((step) => step.id),
       tags: this.m.tags
         .split(',')
         .map((t) => t.trim())
@@ -143,6 +215,17 @@ export class RecipeForm implements OnInit {
         const uploads: Observable<unknown>[] = this.files.map((f) =>
           this.service.uploadMedia(r.id, f),
         );
+        activeSteps.forEach((step, index) => {
+          const savedStep = r.stepDetails[index];
+          if (!savedStep) return;
+          if (step.removeImage && savedStep.imageUrl) {
+            uploads.push(this.service.deleteStepImage(r.id, savedStep.id));
+          } else if (step.imageFile) {
+            uploads.push(this.service.uploadStepImage(r.id, savedStep.id, step.imageFile));
+          } else if (step.imageUrlDraft.trim()) {
+            uploads.push(this.service.addStepImageUrl(r.id, savedStep.id, step.imageUrlDraft.trim()));
+          }
+        });
         if (this.imageUrl.trim())
           uploads.push(this.service.addImageUrl(r.id, this.imageUrl.trim()));
         if (this.videoUrl.trim())

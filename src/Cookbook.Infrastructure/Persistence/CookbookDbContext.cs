@@ -24,7 +24,12 @@ public sealed class CookbookDbContext(DbContextOptions<CookbookDbContext> option
         });
         b.Entity<RecipeIngredient>().Property(x => x.Name).HasMaxLength(200).IsRequired();
         b.Entity<RecipeIngredient>().Property(x => x.Quantity).HasMaxLength(100);
-        b.Entity<RecipeStep>().Property(x => x.Text).HasMaxLength(4000).IsRequired();
+        b.Entity<RecipeStep>(e =>
+        {
+            e.Property(x => x.Text).HasMaxLength(4000).IsRequired();
+            e.Property(x => x.ImageFileName).HasMaxLength(300);
+            e.Property(x => x.ImageContentType).HasMaxLength(100);
+        });
         b.Entity<RecipeCookingAppliance>(e =>
         {
             e.ToTable("RecipeCookingAppliances");

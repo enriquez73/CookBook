@@ -1,0 +1,26 @@
+@baseUrl = http://localhost:5000
+@recipeId = 00000000-0000-0000-0000-000000000000
+@stepId = 00000000-0000-0000-0000-000000000000
+
+### Upload or replace a step image (multipart; set the file path for your machine)
+POST {{baseUrl}}/api/recipes/{{recipeId}}/steps/{{stepId}}/image
+Content-Type: multipart/form-data; boundary=StepImageBoundary
+
+--StepImageBoundary
+Content-Disposition: form-data; name="file"; filename="step.jpg"
+Content-Type: image/jpeg
+
+< ./step.jpg
+--StepImageBoundary--
+
+### Download an image URL and assign it to a step
+POST {{baseUrl}}/api/recipes/{{recipeId}}/steps/{{stepId}}/image-url
+Content-Type: application/json
+
+{
+  "url": "https://example.com/step.jpg",
+  "caption": null
+}
+
+### Remove the image from a step
+DELETE {{baseUrl}}/api/recipes/{{recipeId}}/steps/{{stepId}}/image

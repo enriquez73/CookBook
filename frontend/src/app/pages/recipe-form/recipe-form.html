@@ -60,12 +60,30 @@
 
   <h3>Preparazione</h3>
   @for (s of m.steps; track $index; let n = $index) {
-    <div class="row">
-      <textarea pTextarea [name]="'s' + n" rows="2" [ngModel]="s" (ngModelChange)="m.steps[n] = $event" [placeholder]="'Passo ' + (n + 1)"></textarea>
-      <button pButton severity="secondary" size="small" type="button" (click)="m.steps.splice(n, 1)" aria-label="Rimuovi"><span pButtonLabel>✕</span></button>
-    </div>
+    <fieldset class="step-editor">
+      <legend>Passo {{ n + 1 }}</legend>
+      <div class="row">
+        <textarea pTextarea [name]="'s' + n" rows="2" [(ngModel)]="s.text" [placeholder]="'Descrivi il passo ' + (n + 1)"></textarea>
+        <button pButton severity="secondary" size="small" type="button" (click)="removeStep(n)" [attr.aria-label]="'Rimuovi passo ' + (n + 1)"><span pButtonLabel>Rimuovi passo</span></button>
+      </div>
+      @if (!s.removeImage && (s.imagePreviewUrl || s.savedImageUrl)) {
+        <img class="step-image-preview" [src]="s.imagePreviewUrl ?? s.savedImageUrl" [alt]="'Immagine del passo ' + (n + 1)" />
+      }
+      <div class="step-image-inputs">
+        <label [for]="'step-file-' + n">Immagine del passo (file)</label>
+        <input [id]="'step-file-' + n" type="file" accept="image/jpeg,image/png,image/webp,image/gif" (change)="pickStepImage(s, $event)" />
+        <label [for]="'step-url-' + n">Oppure link diretto all’immagine</label>
+        <input pInputText [id]="'step-url-' + n" [name]="'step-url-' + n" type="url"
+               [(ngModel)]="s.imageUrlDraft" (ngModelChange)="clearStepFile(s)"
+               placeholder="https://esempio.it/foto.jpg" />
+        <small>JPEG, PNG, WebP o GIF; massimo 15 MB. L’immagine viene salvata nell’app.</small>
+        @if (!s.removeImage && (s.imagePreviewUrl || s.savedImageUrl || s.imageUrlDraft)) {
+          <button pButton severity="secondary" size="small" type="button" (click)="removeStepImage(s)"><span pButtonLabel>Rimuovi immagine del passo</span></button>
+        }
+      </div>
+    </fieldset>
   }
-  <button pButton severity="secondary" size="small" type="button" (click)="m.steps.push('')"><span pButtonLabel>+ Passo</span></button>
+  <button pButton severity="secondary" size="small" type="button" (click)="addStep()"><span pButtonLabel>+ Passo</span></button>
 
   <h3>Foto e video</h3>
   @for (x of existing(); track x.id) {

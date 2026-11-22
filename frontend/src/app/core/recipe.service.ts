@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { Media, RecipeDetail, RecipeFilter, RecipeRequest, RecipeSummary } from './models';
+import { Media, RecipeDetail, RecipeFilter, RecipeRequest, RecipeStep, RecipeSummary } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class RecipeService {
@@ -54,5 +54,19 @@ export class RecipeService {
 
   deleteMedia(id: string, mediaId: string): Observable<void> {
     return this.http.delete<void>(`/api/recipes/${id}/media/${mediaId}`);
+  }
+
+  uploadStepImage(id: string, stepId: string, file: File): Observable<RecipeStep> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<RecipeStep>(`/api/recipes/${id}/steps/${stepId}/image`, form);
+  }
+
+  addStepImageUrl(id: string, stepId: string, url: string): Observable<RecipeStep> {
+    return this.http.post<RecipeStep>(`/api/recipes/${id}/steps/${stepId}/image-url`, { url, caption: null });
+  }
+
+  deleteStepImage(id: string, stepId: string): Observable<void> {
+    return this.http.delete<void>(`/api/recipes/${id}/steps/${stepId}/image`);
   }
 }

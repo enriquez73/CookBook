@@ -42,7 +42,14 @@
     <section class="card">
       <h2>Preparazione</h2>
       <ol>
-        @for (s of r.steps; track $index) { <li>{{ s }}</li> }
+        @for (s of r.stepDetails; track s.id; let n = $index) {
+          <li>
+            <p>{{ s.text }}</p>
+            @if (s.imageUrl) {
+              <img class="step-image" [src]="s.imageUrl" [alt]="'Immagine del passo ' + (n + 1)" loading="lazy" />
+            }
+          </li>
+        }
       </ol>
     </section>
   </div>

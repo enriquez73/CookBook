@@ -35,6 +35,12 @@ export interface Media {
   caption: string | null;
 }
 
+export interface RecipeStep {
+  id: string;
+  text: string;
+  imageUrl: string | null;
+}
+
 export interface RecipeSummary {
   id: string;
   title: string;
@@ -65,6 +71,7 @@ export interface RecipeDetail {
   usesSteamer: boolean;
   ingredients: Ingredient[];
   steps: string[];
+  stepDetails: RecipeStep[];
   tags: string[];
   media: Media[];
   createdAt: string;
@@ -82,6 +89,7 @@ export interface RecipeRequest {
   usesSteamer: boolean;
   ingredients: Ingredient[];
   steps: string[];
+  stepIds: (string | null)[];
   tags: string[];
 }
 

@@ -1,4 +1,4 @@
-import { Component, inject, input, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, OnInit, signal } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router, RouterLink } from '@angular/router';
 import { Media, RecipeDetail, applianceLabel, functionLabel } from '../../core/models';
@@ -10,6 +10,7 @@ import { ButtonModule } from 'primeng/button';
   selector: 'app-recipe-detail',
   styleUrl: './recipe-detail.css',
   templateUrl: './recipe-detail.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecipeDetailPage implements OnInit {
   readonly id = input.required<string>();

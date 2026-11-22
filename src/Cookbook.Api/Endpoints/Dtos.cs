@@ -18,7 +18,11 @@ public sealed record RecipeRequest(
     List<string>? Steps,
     List<string>? Tags,
     List<CookingAppliance>? CookingAppliances = null,
-    CookingAppliance? CookingAppliance = null);
+    CookingAppliance? CookingAppliance = null,
+    List<Guid?>? StepIds = null);
+
+/// <summary>Descrive un passaggio della ricetta e l'eventuale immagine associata.</summary>
+public sealed record RecipeStepDto(Guid Id, string Text, string? ImageUrl);
 
 public sealed record RecipeSummaryDto(
     Guid Id,
@@ -45,6 +49,7 @@ public sealed record RecipeDetailDto(
     bool UsesSteamer,
     List<IngredientDto> Ingredients,
     List<string> Steps,
+    List<RecipeStepDto> StepDetails,
     List<string> Tags,
     List<MediaDto> Media,
     DateTime CreatedAt,
