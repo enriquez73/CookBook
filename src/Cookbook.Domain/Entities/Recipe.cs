@@ -2,20 +2,22 @@ namespace Cookbook.Domain.Entities;
 
 public sealed class Recipe
 {
-    public const int MaxServings = 4;
+    public const int MaxServings = 100;
 
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
 
-    /// <summary>Persone servite (1-4, il cuociriso cuoce max 4 tazze di riso crudo).</summary>
+    /// <summary>Persone servite.</summary>
     public int Servings { get; set; } = 2;
 
-    /// <summary>Tazze di riso crudo (0-4); 0 se la ricetta non usa riso.</summary>
+    /// <summary>Tazze di riso crudo; 0 se la ricetta non usa riso.</summary>
     public decimal RiceCups { get; set; }
 
     public int CookingTimeMinutes { get; set; }
-    public CookerFunction CookerFunction { get; set; } = CookerFunction.WhiteRice;
+    public List<RecipeCookingAppliance> CookingAppliances { get; set; } = [];
+    /// <summary>Programma del cuociriso, nullo per gli altri tipi di attrezzatura.</summary>
+    public CookerFunction? CookerFunction { get; set; } = global::Cookbook.Domain.Entities.CookerFunction.WhiteRice;
     public bool UsesSteamer { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
@@ -43,6 +45,12 @@ public sealed class RecipeStep
     public Guid RecipeId { get; set; }
     public int Order { get; set; }
     public string Text { get; set; } = string.Empty;
+}
+
+public sealed class RecipeCookingAppliance
+{
+    public Guid RecipeId { get; set; }
+    public CookingAppliance Appliance { get; set; }
 }
 
 public sealed class Tag

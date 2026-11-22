@@ -1,0 +1,15 @@
+.git
+**/.git
+.aws
+.agents
+.codex
+.env
+docker/.env
+**/bin
+**/obj
+**/App_Data
+frontend/node_modules
+frontend/.angular
+frontend/dist
+src/Cookbook.Api/wwwroot
+**/appsettings.Development.json

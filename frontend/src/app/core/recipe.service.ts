@@ -48,6 +48,10 @@ export class RecipeService {
     return this.http.post<Media>(`/api/recipes/${id}/media/video-url`, { url, caption });
   }
 
+  addImageUrl(id: string, url: string, caption?: string): Observable<Media> {
+    return this.http.post<Media>(`/api/recipes/${id}/media/image-url`, { url, caption });
+  }
+
   deleteMedia(id: string, mediaId: string): Observable<void> {
     return this.http.delete<void>(`/api/recipes/${id}/media/${mediaId}`);
   }

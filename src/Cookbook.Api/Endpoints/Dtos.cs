@@ -12,11 +12,13 @@ public sealed record RecipeRequest(
     int Servings,
     decimal RiceCups,
     int CookingTimeMinutes,
-    CookerFunction CookerFunction,
+    CookerFunction? CookerFunction,
     bool UsesSteamer,
     List<IngredientDto>? Ingredients,
     List<string>? Steps,
-    List<string>? Tags);
+    List<string>? Tags,
+    List<CookingAppliance>? CookingAppliances = null,
+    CookingAppliance? CookingAppliance = null);
 
 public sealed record RecipeSummaryDto(
     Guid Id,
@@ -24,11 +26,13 @@ public sealed record RecipeSummaryDto(
     string? Description,
     int Servings,
     int CookingTimeMinutes,
-    CookerFunction CookerFunction,
+    CookerFunction? CookerFunction,
     bool UsesSteamer,
     List<string> Tags,
     string? CoverUrl,
-    bool HasVideo);
+    bool HasVideo,
+    CookingAppliance CookingAppliance,
+    List<CookingAppliance> CookingAppliances);
 
 public sealed record RecipeDetailDto(
     Guid Id,
@@ -37,13 +41,17 @@ public sealed record RecipeDetailDto(
     int Servings,
     decimal RiceCups,
     int CookingTimeMinutes,
-    CookerFunction CookerFunction,
+    CookerFunction? CookerFunction,
     bool UsesSteamer,
     List<IngredientDto> Ingredients,
     List<string> Steps,
     List<string> Tags,
     List<MediaDto> Media,
     DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt,
+    CookingAppliance CookingAppliance,
+    List<CookingAppliance> CookingAppliances);
 
 public sealed record VideoUrlRequest(string Url, string? Caption);
+
+public sealed record ImageUrlRequest(string Url, string? Caption);

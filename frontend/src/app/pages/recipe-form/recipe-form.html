@@ -1,0 +1,91 @@
+<h1>{{ id() ? 'Modifica ricetta' : 'Nuova ricetta' }}</h1>
+<form class="card" (ngSubmit)="save()" #f="ngForm">
+  <label for="title">Titolo *</label>
+  <input pInputText id="title" name="title" [(ngModel)]="m.title" required maxlength="200" />
+
+  <label for="desc">Descrizione</label>
+  <textarea pTextarea id="desc" name="desc" rows="3" [(ngModel)]="m.description"></textarea>
+
+  <fieldset>
+    <legend>Attrezzature usate *</legend>
+    <div class="row">
+      @for (a of appliances; track a.value) {
+        <label class="appliance-option">
+          <input type="checkbox" [checked]="m.cookingAppliances.includes(a.value)"
+                 (change)="toggleAppliance(a.value, $event)" />
+          {{ a.label }}
+        </label>
+      }
+    </div>
+    @if (m.cookingAppliances.length === 0) { <p class="error">Seleziona almeno un'attrezzatura.</p> }
+  </fieldset>
+
+  <div class="row">
+    @if (usesRiceCooker()) {
+      <div>
+        <label for="fn">Funzione del cuociriso</label>
+        <p-select id="fn" name="fn" [options]="functions" optionLabel="label" optionValue="value"
+                  [(ngModel)]="m.cookerFunction" required aria-label="Funzione del cuociriso" />
+      </div>
+    }
+    <div>
+      <label for="serv">Porzioni (1-100)</label>
+      <input pInputText id="serv" name="serv" type="number" min="1" max="100" [(ngModel)]="m.servings" required />
+    </div>
+    <div>
+      <label for="cups">Tazze di riso crudo (0-100)</label>
+      <input pInputText id="cups" name="cups" type="number" min="0" max="100" step="0.5" [(ngModel)]="m.riceCups" />
+    </div>
+    <div>
+      <label for="min">Tempo di cottura (min)</label>
+      <input pInputText id="min" name="min" type="number" min="0" max="1440" [(ngModel)]="m.cookingTimeMinutes" />
+    </div>
+  </div>
+  @if (usesRiceCooker()) {
+    <label><input type="checkbox" name="steam" [(ngModel)]="m.usesSteamer" style="width:auto" /> Usa la vaporiera del cuociriso</label>
+  }
+
+  <label for="tags">Tag (separati da virgola)</label>
+  <input pInputText id="tags" name="tags" [(ngModel)]="m.tags" placeholder="veloce, vegetariano" />
+
+  <h3>Ingredienti</h3>
+  @for (i of m.ingredients; track $index; let n = $index) {
+    <div class="row">
+      <input pInputText [name]="'iq' + n" [(ngModel)]="i.quantity" placeholder="Quantità (es. 1 tazza)" />
+      <input pInputText [name]="'in' + n" [(ngModel)]="i.name" placeholder="Ingrediente" />
+      <button pButton severity="secondary" size="small" type="button" (click)="m.ingredients.splice(n, 1)" aria-label="Rimuovi"><span pButtonLabel>✕</span></button>
+    </div>
+  }
+  <button pButton severity="secondary" size="small" type="button" (click)="m.ingredients.push({ name: '', quantity: '' })"><span pButtonLabel>+ Ingrediente</span></button>
+
+  <h3>Preparazione</h3>
+  @for (s of m.steps; track $index; let n = $index) {
+    <div class="row">
+      <textarea pTextarea [name]="'s' + n" rows="2" [ngModel]="s" (ngModelChange)="m.steps[n] = $event" [placeholder]="'Passo ' + (n + 1)"></textarea>
+      <button pButton severity="secondary" size="small" type="button" (click)="m.steps.splice(n, 1)" aria-label="Rimuovi"><span pButtonLabel>✕</span></button>
+    </div>
+  }
+  <button pButton severity="secondary" size="small" type="button" (click)="m.steps.push('')"><span pButtonLabel>+ Passo</span></button>
+
+  <h3>Foto e video</h3>
+  @for (x of existing(); track x.id) {
+    <div class="row">
+      @if (x.kind === 'Photo') { <img [src]="x.url" alt="" height="60" /> } @else { <span>🎬 {{ x.url }}</span> }
+      <button pButton severity="danger" size="small" type="button" (click)="removeMedia(x)"><span pButtonLabel>Rimuovi</span></button>
+    </div>
+  }
+  <label for="files">Aggiungi foto o video (file)</label>
+  <input id="files" type="file" multiple accept="image/*,video/mp4,video/webm,video/quicktime" (change)="pick($event)" />
+  <label for="image-url">Oppure link diretto a un’immagine</label>
+  <input pInputText id="image-url" name="image-url" type="url" [(ngModel)]="imageUrl"
+         placeholder="https://esempio.it/foto.jpg" />
+  <small>La foto verrà scaricata e salvata nell’app (JPEG, PNG, WebP o GIF; massimo 15 MB).</small>
+  <label for="vurl">Oppure link a un video (es. YouTube)</label>
+  <input pInputText id="vurl" name="vurl" type="url" [(ngModel)]="videoUrl" placeholder="https://www.youtube.com/watch?v=…" />
+
+  @if (error()) { <p class="error">{{ error() }}</p> }
+  <div class="row" style="margin-top:1rem">
+    <button pButton type="submit" [disabled]="saving() || f.invalid || m.cookingAppliances.length === 0"><span pButtonLabel>{{ saving() ? 'Salvataggio…' : 'Salva' }}</span></button>
+    <a pButton severity="secondary" [routerLink]="id() ? ['/ricette', id()] : ['/']"><span pButtonLabel>Annulla</span></a>
+  </div>
+</form>

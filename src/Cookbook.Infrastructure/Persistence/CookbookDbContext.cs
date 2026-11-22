@@ -16,6 +16,7 @@ public sealed class CookbookDbContext(DbContextOptions<CookbookDbContext> option
             e.Property(x => x.Description).HasMaxLength(4000);
             e.Property(x => x.CookerFunction).HasConversion<string>().HasMaxLength(30);
             e.Property(x => x.RiceCups).HasConversion<double>();
+            e.HasMany(x => x.CookingAppliances).WithOne().HasForeignKey(x => x.RecipeId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(x => x.Ingredients).WithOne().HasForeignKey(x => x.RecipeId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(x => x.Steps).WithOne().HasForeignKey(x => x.RecipeId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(x => x.Media).WithOne().HasForeignKey(x => x.RecipeId).OnDelete(DeleteBehavior.Cascade);
@@ -24,6 +25,12 @@ public sealed class CookbookDbContext(DbContextOptions<CookbookDbContext> option
         b.Entity<RecipeIngredient>().Property(x => x.Name).HasMaxLength(200).IsRequired();
         b.Entity<RecipeIngredient>().Property(x => x.Quantity).HasMaxLength(100);
         b.Entity<RecipeStep>().Property(x => x.Text).HasMaxLength(4000).IsRequired();
+        b.Entity<RecipeCookingAppliance>(e =>
+        {
+            e.ToTable("RecipeCookingAppliances");
+            e.HasKey(x => new { x.RecipeId, x.Appliance });
+            e.Property(x => x.Appliance).HasConversion<string>().HasMaxLength(30);
+        });
         b.Entity<Tag>(e =>
         {
             e.Property(x => x.Name).HasMaxLength(50).IsRequired();

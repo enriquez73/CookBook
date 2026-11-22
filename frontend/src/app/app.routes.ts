@@ -1,12 +1,25 @@
 import { Routes } from '@angular/router';
-import { RecipeFormPage } from './pages/recipe-form';
-import { RecipeDetailPage } from './pages/recipe-detail';
-import { RecipeListPage } from './pages/recipe-list';
 
 export const routes: Routes = [
-  { path: '', component: RecipeListPage, title: 'Ricette' },
-  { path: 'ricette/nuova', component: RecipeFormPage, title: 'Nuova ricetta' },
-  { path: 'ricette/:id/modifica', component: RecipeFormPage, title: 'Modifica ricetta' },
-  { path: 'ricette/:id', component: RecipeDetailPage, title: 'Ricetta' },
+  {
+    path: '',
+    loadComponent: () => import('./pages/app-recipe-list/app-recipe-list').then((m) => m.AppRecipeList),
+    title: 'Ricette',
+  },
+  {
+    path: 'ricette/nuova',
+    loadComponent: () => import('./pages/recipe-form/recipe-form').then((m) => m.RecipeForm),
+    title: 'Nuova ricetta',
+  },
+  {
+    path: 'ricette/:id/modifica',
+    loadComponent: () => import('./pages/recipe-form/recipe-form').then((m) => m.RecipeForm),
+    title: 'Modifica ricetta',
+  },
+  {
+    path: 'ricette/:id',
+    loadComponent: () => import('./pages/recipe-detail/recipe-detail').then((m) => m.RecipeDetailPage),
+    title: 'Ricetta',
+  },
   { path: '**', redirectTo: '' },
 ];

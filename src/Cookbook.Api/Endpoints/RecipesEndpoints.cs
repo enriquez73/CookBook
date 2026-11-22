@@ -12,6 +12,7 @@ public static class RecipesEndpoints
     public static IEndpointRouteBuilder MapRecipesEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/cooker-functions", () => Enum.GetNames<CookerFunction>());
+        app.MapGet("/api/cooking-appliances", () => Enum.GetNames<CookingAppliance>());
 
         app.MapGet("/api/tags", async (CookbookDbContext db) =>
             await db.Tags.Where(t => t.Recipes.Any()).OrderBy(t => t.Name).Select(t => t.Name).ToListAsync());
@@ -23,16 +24,18 @@ public static class RecipesEndpoints
         g.MapPut("/{id:guid}", Update);
         g.MapDelete("/{id:guid}", Delete);
         g.MapPost("/{id:guid}/media", UploadMedia).DisableAntiforgery();
+        g.MapPost("/{id:guid}/media/image-url", AddImageUrl);
         g.MapPost("/{id:guid}/media/video-url", AddVideoUrl);
         g.MapDelete("/{id:guid}/media/{mediaId:guid}", DeleteMedia);
         return app;
     }
 
     private static IQueryable<Recipe> Full(CookbookDbContext db) =>
-        db.Recipes.Include(r => r.Ingredients).Include(r => r.Steps).Include(r => r.Tags).Include(r => r.Media);
+        db.Recipes.Include(r => r.Ingredients).Include(r => r.Steps).Include(r => r.Tags).Include(r => r.Media)
+            .Include(r => r.CookingAppliances);
 
     private static async Task<IResult> List(
-        CookbookDbContext db, string? search, CookerFunction? cookerFunction, string? tag,
+        CookbookDbContext db, string? search, CookingAppliance? cookingAppliance, CookerFunction? cookerFunction, string? tag,
         int? maxMinutes, int? servings)
     {
         var q = db.Recipes.AsNoTracking().AsQueryable();
@@ -44,12 +47,13 @@ public static class RecipesEndpoints
                 || r.Ingredients.Any(i => i.Name.ToLower().Contains(s))
                 || r.Tags.Any(t => t.Name.ToLower().Contains(s)));
         }
+        if (cookingAppliance is not null) q = q.Where(r => r.CookingAppliances.Any(a => a.Appliance == cookingAppliance));
         if (cookerFunction is not null) q = q.Where(r => r.CookerFunction == cookerFunction);
         if (!string.IsNullOrWhiteSpace(tag)) q = q.Where(r => r.Tags.Any(t => t.Name == tag.Trim().ToLower()));
         if (maxMinutes is not null) q = q.Where(r => r.CookingTimeMinutes <= maxMinutes);
         if (servings is not null) q = q.Where(r => r.Servings == servings);
 
-        var recipes = await q.Include(r => r.Tags).Include(r => r.Media)
+        var recipes = await q.Include(r => r.Tags).Include(r => r.Media).Include(r => r.CookingAppliances)
             .OrderByDescending(r => r.CreatedAt).ToListAsync();
         return Results.Ok(recipes.Select(ToSummary));
     }
@@ -77,9 +81,11 @@ public static class RecipesEndpoints
         if (r is null) return Results.NotFound();
         db.RemoveRange(r.Ingredients);
         db.RemoveRange(r.Steps);
+        db.RemoveRange(r.CookingAppliances);
         await Apply(r, req, db);
         db.AddRange(r.Ingredients);
         db.AddRange(r.Steps);
+        db.AddRange(r.CookingAppliances);
         await db.SaveChangesAsync();
         return Results.Ok(ToDetail(r));
     }
@@ -143,6 +149,42 @@ public static class RecipesEndpoints
         return Results.Created($"/api/recipes/{id}", ToMedia(media));
     }
 
+    private static async Task<IResult> AddImageUrl(
+        Guid id, ImageUrlRequest req, CookbookDbContext db, MediaStorage storage,
+        RemoteImageDownloader downloader, CancellationToken cancellationToken)
+    {
+        var recipe = await db.Recipes.Include(x => x.Media).FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (recipe is null) return Results.NotFound();
+
+        var downloaded = await downloader.DownloadAsync(req.Url, cancellationToken);
+        if (!downloaded.IsSuccess)
+            return Invalid("imageUrl", downloaded.Error ?? "Non è stato possibile scaricare l'immagine.");
+
+        var media = new RecipeMedia
+        {
+            Kind = MediaKind.Photo,
+            FileName = downloaded.FileName,
+            ContentType = downloaded.ContentType,
+            Caption = string.IsNullOrWhiteSpace(req.Caption) ? null : req.Caption.Trim(),
+            Order = recipe.Media.Count
+        };
+        media.RecipeId = id;
+        recipe.Media.Add(media);
+        db.Add(media);
+        recipe.UpdatedAt = DateTime.UtcNow;
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            storage.Delete(downloaded.FileName!);
+            throw;
+        }
+
+        return Results.Created($"/api/recipes/{id}", ToMedia(media));
+    }
+
     private static async Task<IResult> DeleteMedia(Guid id, Guid mediaId, CookbookDbContext db, MediaStorage storage)
     {
         var m = await db.Set<RecipeMedia>().FirstOrDefaultAsync(x => x.Id == mediaId && x.RecipeId == id);
@@ -161,10 +203,14 @@ public static class RecipesEndpoints
         var e = new Dictionary<string, string[]>();
         if (string.IsNullOrWhiteSpace(r.Title)) e["title"] = ["Il titolo è obbligatorio."];
         else if (r.Title.Length > 200) e["title"] = ["Il titolo è troppo lungo (max 200)."];
-        if (r.Servings is < 1 or > Recipe.MaxServings) e["servings"] = ["Le porzioni devono essere da 1 a 4."];
-        if (r.RiceCups is < 0 or > 4) e["riceCups"] = ["Le tazze di riso crudo devono essere da 0 a 4."];
+        if (r.Servings is < 1 or > Recipe.MaxServings) e["servings"] = ["Le porzioni devono essere da 1 a 100."];
+        if (r.RiceCups is < 0 or > 100) e["riceCups"] = ["Le tazze di riso devono essere da 0 a 100."];
         if (r.CookingTimeMinutes is < 0 or > 1440) e["cookingTimeMinutes"] = ["Tempo di cottura non valido."];
-        if (!Enum.IsDefined(r.CookerFunction)) e["cookerFunction"] = ["Funzione non valida."];
+        var appliances = RequestedAppliances(r);
+        if (appliances.Count == 0) e["cookingAppliances"] = ["Seleziona almeno un'attrezzatura."];
+        if (appliances.Any(a => !Enum.IsDefined(a))) e["cookingAppliances"] = ["Attrezzatura non valida."];
+        if (appliances.Contains(CookingAppliance.RiceCooker) && (r.CookerFunction is null || !Enum.IsDefined(r.CookerFunction.Value)))
+            e["cookerFunction"] = ["Seleziona un programma valido per il cuociriso."];
         if (r.Ingredients?.Any(i => string.IsNullOrWhiteSpace(i.Name)) == true) e["ingredients"] = ["Ogni ingrediente deve avere un nome."];
         return e.Count > 0 ? e : null;
     }
@@ -176,7 +222,9 @@ public static class RecipesEndpoints
         r.Servings = req.Servings;
         r.RiceCups = req.RiceCups;
         r.CookingTimeMinutes = req.CookingTimeMinutes;
-        r.CookerFunction = req.CookerFunction;
+        var appliances = RequestedAppliances(req).Distinct().ToList();
+        r.CookingAppliances = appliances.Select(a => new RecipeCookingAppliance { RecipeId = r.Id, Appliance = a }).ToList();
+        r.CookerFunction = appliances.Contains(CookingAppliance.RiceCooker) ? req.CookerFunction : null;
         r.UsesSteamer = req.UsesSteamer;
         r.UpdatedAt = DateTime.UtcNow;
 
@@ -200,7 +248,14 @@ public static class RecipesEndpoints
         }).ToList();
     }
 
-    private static string MediaUrl(RecipeMedia m) => m.Kind == MediaKind.VideoUrl ? m.Url! : $"/media/{m.FileName}";
+    private static string MediaUrl(RecipeMedia m) => m.Kind == MediaKind.VideoUrl
+        ? m.Url!
+        : $"/media/{string.Join('/', m.FileName!.Split('/').Select(Uri.EscapeDataString))}";
+
+    private static List<CookingAppliance> RequestedAppliances(RecipeRequest req) =>
+        req.CookingAppliances is not null
+            ? req.CookingAppliances
+            : [req.CookingAppliance ?? CookingAppliance.RiceCooker];
 
     private static MediaDto ToMedia(RecipeMedia m) => new(m.Id, m.Kind, MediaUrl(m), m.Caption);
 
@@ -208,7 +263,7 @@ public static class RecipesEndpoints
         r.Id, r.Title, r.Description, r.Servings, r.CookingTimeMinutes, r.CookerFunction, r.UsesSteamer,
         r.Tags.Select(t => t.Name).Order().ToList(),
         r.Media.Where(m => m.Kind == MediaKind.Photo).OrderBy(m => m.Order).Select(MediaUrl).FirstOrDefault(),
-        r.Media.Any(m => m.Kind != MediaKind.Photo));
+        r.Media.Any(m => m.Kind != MediaKind.Photo), PrimaryAppliance(r), Appliances(r));
 
     private static RecipeDetailDto ToDetail(Recipe r) => new(
         r.Id, r.Title, r.Description, r.Servings, r.RiceCups, r.CookingTimeMinutes, r.CookerFunction, r.UsesSteamer,
@@ -216,5 +271,11 @@ public static class RecipesEndpoints
         r.Steps.OrderBy(s => s.Order).Select(s => s.Text).ToList(),
         r.Tags.Select(t => t.Name).Order().ToList(),
         r.Media.OrderBy(m => m.Order).Select(ToMedia).ToList(),
-        r.CreatedAt, r.UpdatedAt);
+        r.CreatedAt, r.UpdatedAt, PrimaryAppliance(r), Appliances(r));
+
+    private static List<CookingAppliance> Appliances(Recipe r) =>
+        r.CookingAppliances.Select(a => a.Appliance).Order().ToList();
+
+    private static CookingAppliance PrimaryAppliance(Recipe r) =>
+        Appliances(r).FirstOrDefault(CookingAppliance.RiceCooker);
 }
