@@ -41,6 +41,7 @@
     </section>
     <section class="card">
       <h2>Preparazione</h2>
+
       <ol>
         @for (s of r.stepDetails; track s.id; let n = $index) {
           <li>
@@ -51,6 +52,7 @@
           </li>
         }
       </ol>
+      <p-scrolltop />
     </section>
   </div>
 } @else if (error()) {

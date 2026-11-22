@@ -4,9 +4,10 @@ import { Router, RouterLink } from '@angular/router';
 import { Media, RecipeDetail, applianceLabel, functionLabel } from '../../core/models';
 import { RecipeService } from '../../core/recipe.service';
 import { ButtonModule } from 'primeng/button';
+import { ScrollTopModule } from 'primeng/scrolltop';
 
 @Component({
-  imports: [RouterLink, ButtonModule],
+  imports: [RouterLink, ButtonModule, ScrollTopModule],
   selector: 'app-recipe-detail',
   styleUrl: './recipe-detail.css',
   templateUrl: './recipe-detail.html',
