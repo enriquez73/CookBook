@@ -30,7 +30,7 @@ services:
     networks:
       - homelab
     labels:
-      caddy: cookbook.raspberry.arpa
+      caddy: cookbook.home.arpa
       caddy.tls: internal
       caddy.reverse_proxy: "{{upstreams 80}}"
 
